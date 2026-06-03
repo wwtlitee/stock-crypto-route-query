@@ -573,6 +573,11 @@ h3 {
   background: var(--blue);
 }
 
+.result-row.market-scope::before,
+.result-row.confirmed::before {
+  background: var(--green);
+}
+
 .result-row.perp::before {
   background: var(--cyan);
 }
@@ -590,6 +595,15 @@ h3 {
 }
 
 .result-row.not-found::before {
+  background: var(--muted-2);
+}
+
+.result-row.requires-login::before,
+.result-row.not-checked::before {
+  background: var(--orange);
+}
+
+.result-row.unsupported-market::before {
   background: var(--muted-2);
 }
 
@@ -657,6 +671,11 @@ h3 {
   color: var(--green);
 }
 
+.status-pill.market-scope,
+.status-pill.confirmed {
+  color: var(--green);
+}
+
 .status-pill.conditional {
   color: var(--orange);
 }
@@ -683,6 +702,15 @@ h3 {
 
 .status-pill.discovery {
   color: var(--amber);
+}
+
+.status-pill.requires-login,
+.status-pill.not-checked {
+  color: var(--orange);
+}
+
+.status-pill.unsupported-market {
+  color: var(--muted);
 }
 
 .status-pill.view {
