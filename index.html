@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="输入股票代码或名称，查询证券主数据、券商市场覆盖、加密/RWA 股票入口与平台核验状态。"
+      content="输入股票代码或名称，查询证券主数据、官网可交易证据、RWA 清单命中和资讯筛选结果。"
     />
     <title>TradeRoute 股票购买路径快照</title>
     <link rel="stylesheet" href="./styles.css" />
@@ -22,7 +22,7 @@
         </a>
         <nav class="nav-links" aria-label="主要栏目">
           <a href="#market-results">查询结果</a>
-          <a href="#reason-codes">买不到原因</a>
+          <a href="#reason-codes">状态字典</a>
           <a href="#source-policy">数据口径</a>
         </nav>
       </header>
@@ -64,7 +64,7 @@
               <p class="eyebrow">证券主数据</p>
               <h2 id="assetTitle">阿里巴巴</h2>
               <p class="asset-profile" id="assetSummary">
-                当前展示本地快照中的证券主数据、上市代码、券商市场范围和加密/RWA入口。
+                当前展示本地快照中的证券主数据、官网可交易证据、RWA 清单命中和资讯筛选结果。
               </p>
             </div>
             <div class="freshness">
@@ -74,17 +74,18 @@
           </div>
 
           <div class="verdict-bar" id="verdictBar"></div>
+          <div class="research-panel" id="researchPanel" aria-label="行情和证据诊断"></div>
 
           <div class="filter-panel" aria-label="筛选条件">
             <div>
               <span class="filter-label">路径类型</span>
               <div class="segmented" id="marketFilters">
                 <button type="button" class="is-active" data-market="all">全部</button>
-                <button type="button" data-market="broker">券商路径</button>
+                <button type="button" data-market="broker">官网可交易</button>
                 <button type="button" data-market="crypto">加密/RWA</button>
-                <button type="button" data-market="needs_check">需核验</button>
-                <button type="button" data-market="unsupported">未覆盖</button>
+                <button type="button" data-market="needs_check">待接入</button>
               </div>
+              <p class="filter-note">默认只显示官网证据和官方清单；未接入单标的 adapter 的平台放在待接入。</p>
             </div>
             <div>
               <span class="filter-label">平台类型</span>
@@ -120,24 +121,24 @@
             <summary>
               <span>
                 <strong>状态字典</strong>
-                <small>理解市场覆盖、需登录核验、未覆盖和加密入口</small>
+                <small>理解官网可交易、RWA 清单、待接入和加密入口</small>
               </span>
             </summary>
             <div class="reason-grid">
               <article>
                 <span>01</span>
-                <h3>市场覆盖</h3>
-                <p>平台公开市场范围覆盖该上市市场，但仍需在平台内搜索和核验账户权限。</p>
+                <h3>官网可交易</h3>
+                <p>券商官网标的页写明该股票可交易，并保留证据链接与验证日期。</p>
               </article>
               <article>
                 <span>02</span>
-                <h3>需登录核验</h3>
-                <p>公开快照不能确认单标的，需要登录券商或满足地区/KYC/产品权限后确认。</p>
+                <h3>RWA 清单</h3>
+                <p>官方公开清单或 RWA 快照命中该 ticker，详情里展示来源和适用范围。</p>
               </article>
               <article>
                 <span>03</span>
-                <h3>未覆盖市场</h3>
-                <p>平台公开市场范围不覆盖该主上市或关联上市市场，不标记为可交易。</p>
+                <h3>待接入</h3>
+                <p>还没有官网标的页、官方清单或账户授权接口命中，不展示为可交易路径。</p>
               </article>
               <article>
                 <span>04</span>
@@ -155,9 +156,9 @@
               </span>
             </summary>
             <div class="source-list">
-              <p>状态以官方证券清单、平台公开市场范围、RWA 快照和后续 adapter 搜索记录为准。</p>
-              <p id="sourceSnapshot">页面当前使用本地快照数据，真实上线前需要接入后台定时同步、更新时间和错误反馈入口。</p>
-              <p>本工具只做股票购买路径证据整理，不构成投资建议。最终交易能力以对应平台账户页面为准。</p>
+              <p>状态以官网标的页、官方证券清单、RWA 快照和后续 adapter 搜索记录为准。</p>
+              <p id="sourceSnapshot">页面当前使用本地快照数据，并通过 GitHub Actions 定时刷新快照与验证证据。</p>
+              <p>本工具只做股票购买路径证据整理，不构成投资建议。账户地区、KYC 和产品权限以对应平台规则为准。</p>
             </div>
           </details>
         </section>

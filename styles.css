@@ -424,6 +424,66 @@ h3 {
   font-size: 12px;
 }
 
+.research-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.research-panel article {
+  min-height: 112px;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(21, 26, 33, 0.74);
+}
+
+.research-panel strong,
+.research-panel small,
+.research-panel span,
+.research-panel em,
+.evidence-links a {
+  display: block;
+}
+
+.research-panel strong {
+  margin: 3px 0;
+  font-size: 18px;
+}
+
+.research-panel small,
+.research-panel span,
+.research-panel em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.panel-label {
+  color: var(--accent) !important;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.evidence-links {
+  display: grid;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.evidence-links a {
+  overflow: hidden;
+  color: var(--body);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evidence-links a:hover {
+  color: var(--accent);
+}
+
 .filter-panel {
   display: flex;
   flex-wrap: wrap;
@@ -447,6 +507,13 @@ h3 {
 .filter-label {
   color: var(--muted);
   font-size: 13px;
+}
+
+.filter-note {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted-2);
+  font-size: 12px;
 }
 
 .segmented {
@@ -574,8 +641,13 @@ h3 {
 }
 
 .result-row.market-scope::before,
-.result-row.confirmed::before {
+.result-row.confirmed::before,
+.result-row.verified-tradable::before {
   background: var(--green);
+}
+
+.result-row.official-snapshot::before {
+  background: var(--blue);
 }
 
 .result-row.perp::before {
@@ -599,7 +671,8 @@ h3 {
 }
 
 .result-row.requires-login::before,
-.result-row.not-checked::before {
+.result-row.not-checked::before,
+.result-row.verification-pending::before {
   background: var(--orange);
 }
 
@@ -672,8 +745,13 @@ h3 {
 }
 
 .status-pill.market-scope,
-.status-pill.confirmed {
+.status-pill.confirmed,
+.status-pill.verified-tradable {
   color: var(--green);
+}
+
+.status-pill.official-snapshot {
+  color: var(--blue);
 }
 
 .status-pill.conditional {
@@ -705,7 +783,8 @@ h3 {
 }
 
 .status-pill.requires-login,
-.status-pill.not-checked {
+.status-pill.not-checked,
+.status-pill.verification-pending {
   color: var(--orange);
 }
 
@@ -1013,6 +1092,7 @@ h3 {
   }
 
   .verdict-bar,
+  .research-panel,
   .reason-grid {
     grid-template-columns: 1fr;
   }

@@ -7,9 +7,9 @@ const state = {
 };
 
 const statusMeta = {
-  market_scope: { label: "市场覆盖", className: "market-scope" },
-  requires_login: { label: "需登录核验", className: "requires-login" },
-  unsupported_market: { label: "未覆盖市场", className: "unsupported-market" },
+  verified_tradable: { label: "官网可交易", className: "verified-tradable" },
+  official_snapshot: { label: "RWA清单", className: "official-snapshot" },
+  verification_pending: { label: "待接入", className: "verification-pending" },
   not_checked: { label: "未接入验证", className: "not-checked" },
   tokenized: { label: "代币化替代", className: "tokenized" },
   perp: { label: "股票永续", className: "perp" },
@@ -40,6 +40,7 @@ const freshnessStamp = document.querySelector("#freshnessStamp");
 const verdictBar = document.querySelector("#verdictBar");
 const resultsGrid = document.querySelector("#resultsGrid");
 const emptyState = document.querySelector("#emptyState");
+const researchPanel = document.querySelector("#researchPanel");
 const usCoverage = document.querySelector("#usCoverage");
 const sourceSnapshot = document.querySelector("#sourceSnapshot");
 
@@ -124,44 +125,15 @@ function primaryListing(asset) {
   };
 }
 
-function pickListingForBroker(asset, broker) {
-  const listings = asset.listings || [primaryListing(asset)];
-  const supported = listings.find((listing) => broker.supportedMarkets?.includes(listing.market));
-  if (supported) return { listing: supported, status: "market_scope" };
-  const login = listings.find((listing) => broker.requiresLoginMarkets?.includes(listing.market));
-  if (login) return { listing: login, status: "requires_login" };
-  return { listing: listings[0], status: "unsupported_market" };
-}
-
-function brokerStatusCopy(status, broker, listing) {
-  if (status === "market_scope") {
-    return {
-      summary: `${broker.name} 公开市场范围覆盖 ${listing.exchangeName}；本快照尚未做账户级单标的下单确认。`,
-      detail: `这是基于平台公开市场范围与本地证券主数据的适配结果。请在 ${broker.name} 内搜索 ${listing.symbol}，账户地区、KYC、产品权限和标的状态仍可能影响最终交易。`,
-      evidence: "市场范围覆盖",
-      precision: "需平台内搜索",
-    };
-  }
-  if (status === "requires_login") {
-    return {
-      summary: `${broker.name} 对 ${listing.exchangeName} 需要登录、地区或权限核验，公开快照不能确认单标的。`,
-      detail: `本快照不把该路径标记为可交易，只提示需要在平台内登录搜索 ${listing.symbol} 并核验权限。`,
-      evidence: "需登录核验",
-      precision: "需登录核验",
-    };
-  }
-  return {
-    summary: `${broker.name} 当前公开市场范围未覆盖 ${listing.exchangeName}。`,
-    detail: `未覆盖市场不代表该公司不存在，只表示该平台的公开市场范围与 ${listing.symbol} 的主/关联上市市场不匹配。`,
-    evidence: "市场未覆盖",
-    precision: "未覆盖市场",
-  };
-}
-
 function buildBrokerRows(asset) {
-  return brokers.map((broker) => {
-    const picked = pickListingForBroker(asset, broker);
-    const copy = brokerStatusCopy(picked.status, broker, picked.listing);
+  const routes = asset.profile?.verifiedBrokerRoutes || [];
+  return routes.map((route) => {
+    const broker = brokers.find((item) => item.id === route.platformId) || {
+      id: route.platformId,
+      name: route.platformId,
+      short: route.platformId.slice(0, 2).toUpperCase(),
+      logo: "",
+    };
     return {
       id: `${asset.id}-${broker.id}`,
       platform: broker.name,
@@ -169,18 +141,43 @@ function buildBrokerRows(asset) {
       logo: broker.logo,
       type: "broker",
       market: "broker",
-      marketLabel: "券商路径",
-      status: picked.status,
-      route: [picked.listing.symbol, picked.listing.exchangeName, picked.listing.currency || "币种待核验"],
-      summary: copy.summary,
-      detail: copy.detail,
-      source: broker.source,
-      evidence: copy.evidence,
-      entryPrecision: copy.precision,
-      tradeUrl: broker.url,
-      tradeLabel: "打开券商",
+      marketLabel: "官网直接证据",
+      status: "verified_tradable",
+      route: [route.listingSymbol, "官网页面", route.verifiedAt],
+      summary: `${broker.name} 官网页面写明 ${route.listingSymbol} 可交易。`,
+      detail: route.evidence,
+      source: route.sourceUrl,
+      evidence: "官网页面",
+      entryPrecision: "官网证据",
+      tradeUrl: route.sourceUrl,
+      tradeLabel: "打开证据",
     };
   });
+}
+
+function buildPendingRows(asset, includePending) {
+  if (!includePending) return [];
+  const verifiedBrokerIds = new Set((asset.profile?.verifiedBrokerRoutes || []).map((route) => route.platformId));
+  return brokers
+    .filter((broker) => !verifiedBrokerIds.has(broker.id))
+    .map((broker) => ({
+      id: `${asset.id}-${broker.id}-pending`,
+      platform: broker.name,
+      short: broker.short,
+      logo: broker.logo,
+      type: "broker",
+      market: "verification_pending",
+      marketLabel: "未接入单标的 adapter",
+      status: "verification_pending",
+      route: [primaryListing(asset).symbol, "需官方接口或账户内搜索"],
+      summary: `${broker.name} 尚未接入可复核的单标的 adapter。`,
+      detail: "该平台不会展示为可交易路径，直到拿到官方单标的页面、官方清单或账户授权接口的明确命中结果。",
+      source: broker.source,
+      evidence: "未验证",
+      entryPrecision: "不展示为可交易",
+      tradeUrl: broker.url,
+      tradeLabel: "打开平台",
+    }));
 }
 
 function tickerForCrypto(asset) {
@@ -189,64 +186,68 @@ function tickerForCrypto(asset) {
   return (usListing || listings[0] || primaryListing(asset)).symbol?.replace(/\..+$/, "");
 }
 
-function buildCryptoRows(asset) {
+function buildCryptoRows(asset, includePending = false) {
   const ticker = tickerForCrypto(asset);
   const coverage = rwaCoverage[ticker];
-  if (!coverage) return [];
-  return cryptoPlatforms.map((platform) => {
-    let status = "discovery";
-    let market = "discovery";
-    let label = "加密/RWA入口";
-    let route = [ticker, "需平台内搜索"];
-    if (platform.id === "binance-rwa" || platform.id === "okx-ondo") {
-      status = "tokenized";
-      market = "tokenized";
-      label = "代币化股票";
-      route = [coverage.symbols?.[0] || `${ticker}on`, `${coverage.records || 0} 条 RWA 记录`];
-    } else if (["bybit-xstocks", "kraken-xstocks", "gate-xstocks"].includes(platform.id)) {
-      status = coverage.hasXStock ? "tokenized" : "not_checked";
-      market = "tokenized";
-      label = "xStocks";
-      route = coverage.hasXStock ? [`${ticker}x`, "xStocks"] : [ticker, "未在 xStocks 快照确认"];
-    } else if (["trade-xyz", "hyperliquid", "aster", "bitget-stock"].includes(platform.id)) {
-      status = "not_checked";
-      market = "perp";
-      label = "股票永续";
-      route = [ticker, "需平台内核验"];
-    }
-    return {
+  const verifiedRows = [];
+  if (coverage) {
+    const platform = cryptoPlatforms.find((item) => item.id === "binance-rwa") || cryptoPlatforms[0];
+    verifiedRows.push({
       id: `${asset.id}-${platform.id}`,
       platform: platform.name,
       short: platform.short,
       logo: platform.logo,
       type: platform.type,
-      market,
-      marketLabel: label,
-      status,
-      route,
-      summary: `${platform.name} 作为加密/RWA入口保留；状态来自 RWA 快照或平台入口规则。`,
-      detail: "加密/RWA入口不等于传统股票持仓；地区、钱包、KYC、流动性和衍生品风险需要在平台内确认。",
-      source: "Binance Web3 RWA snapshot + platform adapter",
-      evidence: coverage.records ? "RWA 快照" : "平台入口规则",
-      entryPrecision: "平台入口",
+      market: "crypto",
+      marketLabel: "RWA 清单",
+      status: "official_snapshot",
+      route: [coverage.symbols?.[0] || `${ticker}on`, `${coverage.records || 0} 条 RWA 记录`],
+      summary: `${platform.name} 的公开 RWA 快照命中 ${ticker}。`,
+      detail: "RWA 清单命中只代表代币化入口存在，不等于传统股票持仓。地区、钱包、KYC、流动性和产品风险仍以平台页面为准。",
+      source: "Binance Web3 RWA public API",
+      evidence: "官方快照",
+      entryPrecision: "RWA ticker 命中",
       tradeUrl: platform.url,
       tradeLabel: "打开平台",
-    };
-  });
+    });
+  }
+  if (!includePending) return verifiedRows;
+  const pendingRows = cryptoPlatforms
+    .filter((platform) => !coverage || platform.id !== "binance-rwa")
+    .map((platform) => ({
+      id: `${asset.id}-${platform.id}-pending`,
+      platform: platform.name,
+      short: platform.short,
+      logo: platform.logo,
+      type: platform.type,
+      market: "verification_pending",
+      marketLabel: "未接入单标的 adapter",
+      status: "verification_pending",
+      route: [ticker, "需官方清单 adapter"],
+      summary: `${platform.name} 尚未接入可复核的单标的 adapter。`,
+      detail: "该入口不会展示为已命中路径，直到拿到官方清单、官方标的页或平台接口的明确结果。",
+      source: "adapter pending",
+      evidence: "未验证",
+      entryPrecision: "不展示为可交易",
+      tradeUrl: platform.url,
+      tradeLabel: "打开平台",
+    }));
+  return [...verifiedRows, ...pendingRows];
 }
 
-function buildRows(asset) {
-  return [...buildBrokerRows(asset), ...buildCryptoRows(asset)];
+function buildRows(asset, includePending = false) {
+  return [...buildBrokerRows(asset), ...buildCryptoRows(asset, includePending), ...buildPendingRows(asset, includePending)];
 }
 
 function filteredRows(asset) {
-  return buildRows(asset).filter((row) => {
+  const includePending = state.market === "needs_check";
+  return buildRows(asset, includePending).filter((row) => {
     const marketOk =
       state.market === "all" ||
       row.market === state.market ||
-      (state.market === "crypto" && row.market !== "broker") ||
-      (state.market === "needs_check" && ["requires_login", "not_checked"].includes(row.status)) ||
-      (state.market === "unsupported" && row.status === "unsupported_market");
+      (state.market === "broker" && row.type === "broker" && row.status === "verified_tradable") ||
+      (state.market === "crypto" && row.type !== "broker" && row.status !== "verification_pending") ||
+      (state.market === "needs_check" && ["verification_pending", "not_checked"].includes(row.status));
     const typeOk = state.type === "all" || row.type === state.type;
     return marketOk && typeOk;
   });
@@ -254,11 +255,11 @@ function filteredRows(asset) {
 
 function renderVerdict(rows) {
   const counters = [
-    ["market_scope", "市场覆盖"],
-    ["requires_login", "需核验"],
-    ["unsupported_market", "未覆盖"],
+    ["verified_tradable", "官网可交易"],
+    ["official_snapshot", "RWA清单"],
+    ["verification_pending", "待接入"],
     ["tokenized", "RWA"],
-    ["not_checked", "未验证"],
+    ["not_checked", "未接入"],
   ];
   verdictBar.innerHTML = counters
     .map(([status, label]) => {
@@ -270,24 +271,20 @@ function renderVerdict(rows) {
 
 function sortRows(rows) {
   const rank = {
-    market_scope: 1,
-    requires_login: 3,
+    verified_tradable: 1,
+    official_snapshot: 2,
     tokenized: 4,
     perp: 5,
     discovery: 6,
     not_checked: 7,
-    unsupported_market: 9,
+    verification_pending: 9,
   };
   return [...rows].sort((a, b) => (rank[a.status] || 8) - (rank[b.status] || 8) || a.platform.localeCompare(b.platform));
 }
 
 function renderRows(rows, asset) {
   const sortedRows = sortRows(rows);
-  const shouldFoldUnsupported = state.market === "all" && state.type === "all" && !state.showUnsupported;
-  const unsupportedRows = sortedRows.filter((row) => row.status === "unsupported_market");
-  const displayRows = shouldFoldUnsupported
-    ? sortedRows.filter((row) => row.status !== "unsupported_market")
-    : sortedRows;
+  const displayRows = sortedRows;
 
   if (!displayRows.length) {
     resultsGrid.innerHTML = "";
@@ -343,11 +340,7 @@ function renderRows(rows, asset) {
       `;
     })
     .join("");
-  const foldedHtml =
-    shouldFoldUnsupported && unsupportedRows.length
-      ? `<button class="collapsed-unavailable" type="button" data-show-unsupported="true">未覆盖市场平台 ${unsupportedRows.length} 家 · 展开查看</button>`
-      : "";
-  resultsGrid.innerHTML = rowsHtml + foldedHtml;
+  resultsGrid.innerHTML = rowsHtml;
 }
 
 function renderAssetProfile(asset) {
@@ -363,6 +356,64 @@ function renderAssetProfile(asset) {
     <span><strong>其他代码</strong>${escapeHtml(related)}</span>
     <span class="asset-intro"><strong>简介</strong>${escapeHtml(asset.profile?.description || asset.summary)}</span>
     <span class="asset-intro"><strong>快照代码</strong>${escapeHtml(symbols)}</span>
+  `;
+}
+
+function formatNumber(value, fractionDigits = 2) {
+  if (typeof value !== "number" || Number.isNaN(value)) return "暂无";
+  return new Intl.NumberFormat("zh-CN", { maximumFractionDigits: fractionDigits }).format(value);
+}
+
+function formatSigned(value, suffix = "") {
+  if (typeof value !== "number" || Number.isNaN(value)) return "暂无";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${formatNumber(value)}${suffix}`;
+}
+
+function renderResearchPanel(asset) {
+  if (!researchPanel) return;
+  const research = asset.profile?.research || {};
+  const quote = research.quote;
+  const diagnostics = research.newsDiagnostics;
+  const verifiedRoutes = asset.profile?.verifiedBrokerRoutes || [];
+  const routeSummary = verifiedRoutes.length
+    ? verifiedRoutes
+        .map((route) => {
+          const broker = brokers.find((item) => item.id === route.platformId);
+          return `<a href="${escapeHtml(route.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(broker?.name || route.platformId)} · ${escapeHtml(route.listingSymbol)}</a>`;
+        })
+        .join("")
+    : "<span>暂无官方单标的可交易证据</span>";
+  const quoteHtml = quote
+    ? `
+      <strong>${escapeHtml(formatNumber(quote.price))} ${escapeHtml(quote.currency || "")}</strong>
+      <small>${escapeHtml(quote.exchange || "")} · ${escapeHtml(quote.marketTime || "时间待更新")}</small>
+      <span>${escapeHtml(formatSigned(quote.change))} / ${escapeHtml(formatSigned(quote.changePercent, "%"))}</span>
+      <em>来源：${escapeHtml(quote.source)}</em>
+    `
+    : "<strong>暂无行情补充</strong><small>当前快照未接入可展示报价</small>";
+  const newsHtml = diagnostics
+    ? `
+      <strong>${escapeHtml(String(diagnostics.accepted || 0))} 条强相关资讯</strong>
+      <small>已过滤 ${escapeHtml(String(diagnostics.rejected || 0))} 条弱相关候选</small>
+      <span>${escapeHtml(diagnostics.note || "仅展示命中公司名、代码或关联 ticker 的资讯。")}</span>
+    `
+    : "<strong>暂无资讯筛选</strong><small>该标的未接入资讯筛选</small>";
+
+  researchPanel.innerHTML = `
+    <article>
+      <span class="panel-label">行情补充</span>
+      ${quoteHtml}
+    </article>
+    <article>
+      <span class="panel-label">券商证据</span>
+      <strong>${verifiedRoutes.length} 个官网证据</strong>
+      <div class="evidence-links">${routeSummary}</div>
+    </article>
+    <article>
+      <span class="panel-label">资讯筛选</span>
+      ${newsHtml}
+    </article>
   `;
 }
 
@@ -384,6 +435,7 @@ function render() {
   if (!asset) return;
   const rows = filteredRows(asset);
   renderAssetProfile(asset);
+  renderResearchPanel(asset);
   freshnessStamp.textContent = `快照 ${dataMeta.generatedAt || asset.updated || ""}`;
   renderVerdict(rows);
   renderRows(rows, asset);
@@ -398,7 +450,7 @@ function renderDataMeta() {
       .map(([name, count]) => `${name}: ${count}`)
       .join("；");
     const warnings = (dataMeta.warnings || []).length ? `数据告警：${dataMeta.warnings.join("；")}。` : "";
-    sourceSnapshot.textContent = `当前使用 ${dataMeta.generatedAt || ""} 本地快照：${dataMeta.stockCount || assets.length} 个证券主条目，${dataMeta.listingCount || 0} 个上市代码，RWA ticker ${dataMeta.rwaTickerCount || 0} 个。来源：${sources || "本地快照"}。${warnings}平台结果由券商/加密平台适配器基于快照生成。`;
+    sourceSnapshot.textContent = `当前使用 ${dataMeta.generatedAt || ""} 本地快照：${dataMeta.stockCount || assets.length} 个证券主条目，${dataMeta.listingCount || 0} 个上市代码，RWA ticker ${dataMeta.rwaTickerCount || 0} 个。来源：${sources || "本地快照"}。${warnings}GitHub Actions 每日刷新快照；平台结果由券商/加密平台 adapter 基于可复核来源生成。`;
   }
 }
 
@@ -434,6 +486,7 @@ function runSearch() {
   }
   resultsGrid.innerHTML = "";
   verdictBar.innerHTML = "";
+  if (researchPanel) researchPanel.innerHTML = "";
   assetTitle.textContent = "未找到结果";
   assetSummary.textContent = "当前快照暂未收录该代码。可以换用主上市代码、交易所后缀、公司英文名或 OTC 代码再试。";
   freshnessStamp.textContent = "未匹配";
