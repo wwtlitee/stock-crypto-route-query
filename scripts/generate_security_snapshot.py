@@ -174,7 +174,7 @@ BROKER_PLATFORMS = [
         "id": "scalable-capital",
         "name": "Scalable Capital",
         "short": "SC",
-        "logo": "",
+        "logo": "./assets/logos/scalable_capital.png",
         "url": "https://de.scalable.capital/en/trading",
         "supportedMarkets": [],
         "requiresLoginMarkets": [],
@@ -187,7 +187,7 @@ BROKER_PLATFORMS = [
         "id": "trade-republic",
         "name": "Trade Republic",
         "short": "TR",
-        "logo": "",
+        "logo": "./assets/logos/trade_republic.svg",
         "url": "https://traderepublic.com/",
         "supportedMarkets": [],
         "requiresLoginMarkets": [],
@@ -1337,7 +1337,7 @@ def main():
     output = {
         "meta": {
             "generatedAt": datetime.now().strftime("%Y-%m-%d"),
-            "schemaVersion": "2.4.0",
+            "schemaVersion": "2.4.1",
             "stockCount": len(stocks),
             "listingCount": sum(len(item["listings"]) for item in stocks),
             "rwaTickerCount": len(rwa_coverage),

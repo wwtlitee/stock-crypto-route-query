@@ -26,6 +26,21 @@ const typeLabel = {
   app: "RWA App",
 };
 
+const currencyNameMap = {
+  USD: "美元",
+  HKD: "港元",
+  CNY: "人民币",
+  EUR: "欧元",
+  GBP: "英镑",
+  CHF: "瑞士法郎",
+  SEK: "瑞典克朗",
+  DKK: "丹麦克朗",
+  NOK: "挪威克朗",
+  CAD: "加拿大元",
+  AUD: "澳大利亚元",
+  JPY: "日元",
+};
+
 const marketData = window.MARKET_DATA || {};
 const assets = marketData.stocks || marketData.assets || [];
 const brokers = marketData.platforms?.brokers || [];
@@ -484,11 +499,18 @@ function renderAssetProfile(asset) {
     <span><strong>主代码</strong>${escapeHtml(listing.symbol)}</span>
     <span><strong>市场</strong>${escapeHtml(listing.exchangeName)}</span>
     <span><strong>类型</strong>${escapeHtml(listing.instrumentType || asset.profile?.assetType || "证券")}</span>
-    <span><strong>币种</strong>${escapeHtml(listing.currency || "待核验")}</span>
+    <span><strong>报价币种</strong>${escapeHtml(formatCurrencyLabel(listing.currency))}</span>
     <span><strong>其他代码</strong>${escapeHtml(related)}</span>
     <span class="asset-intro"><strong>简介</strong>${escapeHtml(asset.profile?.description || asset.summary)}</span>
-    <span class="asset-intro"><strong>快照代码</strong>${escapeHtml(symbols)}</span>
+    <span class="asset-intro"><strong>相关交易代码</strong>${escapeHtml(symbols)}</span>
   `;
+}
+
+function formatCurrencyLabel(code) {
+  if (!code) return "待核验";
+  const normalized = String(code).trim().toUpperCase();
+  const currencyName = currencyNameMap[normalized];
+  return currencyName ? `${normalized}（${currencyName}）` : normalized;
 }
 
 function formatNumber(value, fractionDigits = 2) {
@@ -521,7 +543,7 @@ function renderResearchPanel(asset) {
     : "<span>暂无单标的官网页证据，已按券商支持市场生成正股路径</span>";
   const quoteHtml = quote
     ? `
-      <strong>${escapeHtml(formatNumber(quote.price))} ${escapeHtml(quote.currency || "")}</strong>
+      <strong>${escapeHtml(formatNumber(quote.price))} ${escapeHtml(quote.currency ? formatCurrencyLabel(quote.currency) : "")}</strong>
       <small>${escapeHtml(quote.exchange || "")} · ${escapeHtml(quote.marketTime || "时间待更新")}</small>
       <span>${escapeHtml(formatSigned(quote.change))} / ${escapeHtml(formatSigned(quote.changePercent, "%"))}</span>
       <em>来源：${escapeHtml(quote.source)}</em>
