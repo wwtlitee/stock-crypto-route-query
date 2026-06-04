@@ -121,11 +121,11 @@ a {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 4px;
+  margin-left: auto;
 }
 
 .nav-links a {
-  padding: 7px 11px;
+  padding: 7px 12px;
   border-radius: 999px;
   color: var(--muted);
   font-size: 13px;
@@ -137,6 +137,38 @@ a {
 .nav-links a:hover {
   background: rgba(255, 255, 255, 0.06);
   color: var(--ink);
+}
+
+.nav-links .author-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.nav-links .author-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.x-logo {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  color: #ffffff;
+}
+
+.x-logo rect {
+  fill: #050505;
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 1.25;
+}
+
+.x-logo path {
+  fill: currentColor;
 }
 
 .query-dock {
@@ -399,31 +431,6 @@ h3 {
   font-size: 13px;
 }
 
-.verdict-bar {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.verdict-item {
-  padding: 9px 11px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.verdict-item strong {
-  display: block;
-  margin-bottom: 2px;
-  font-size: 20px;
-}
-
-.verdict-item span {
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .research-panel {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -646,6 +653,10 @@ h3 {
   background: var(--green);
 }
 
+.result-row.route-candidate::before {
+  background: var(--amber);
+}
+
 .result-row.official-snapshot::before {
   background: var(--blue);
 }
@@ -748,6 +759,10 @@ h3 {
 .status-pill.confirmed,
 .status-pill.verified-tradable {
   color: var(--green);
+}
+
+.status-pill.route-candidate {
+  color: var(--amber);
 }
 
 .status-pill.official-snapshot {
@@ -1075,12 +1090,8 @@ h3 {
   }
 
   .topbar {
-    align-items: flex-start;
+    align-items: center;
     border-radius: var(--radius);
-  }
-
-  .nav-links {
-    display: none;
   }
 
   .query-dock {
@@ -1091,7 +1102,6 @@ h3 {
     font-size: 24px;
   }
 
-  .verdict-bar,
   .research-panel,
   .reason-grid {
     grid-template-columns: 1fr;
